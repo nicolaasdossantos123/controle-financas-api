@@ -14,7 +14,7 @@ import os
 
 router = APIRouter()
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 load_dotenv()
 
@@ -110,6 +110,7 @@ def criar_categoria(categoria: CategoriaCriar, credentials=Depends(security)):
         "nome": categoria.nome
     }
 
+
 @router.get("/categorias")
 def listar_categorias(credentials=Depends(security)):
     
@@ -139,8 +140,8 @@ def listar_categorias(credentials=Depends(security)):
             lista_categorias.append(dados_categoria)
 
     return lista_categorias
-
-
+        
+        
 @router.get("/categorias/{id}")
 def procurar_categoria(id: int, credentials=Depends(security)):
     
@@ -342,16 +343,13 @@ def listar_transacoes(
 ):
 
     usuario_id = verificar_token(credentials)
-
-    if (
-        data_inicio is not None
-        and data_fim is not None
-        and data_inicio > data_fim
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="A data inicial não pode ser maior que a data final."
-        )
+    
+    if data_inicio is not None and data_fim is not None:
+        if data_inicio > data_fim:
+            raise HTTPException(
+                status_code=409,
+                detail="A data inicial não pode ser posterior à data final"
+            )
 
     query = """
         SELECT id, descricao, valor, tipo, data, categoria_id, usuario_id
@@ -617,6 +615,12 @@ def login(login: Login):
     
 def verificar_token(credentials):
     
+    if credentials is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Token não informado"
+        )
+
     token = credentials.credentials
     
     try:
@@ -626,7 +630,7 @@ def verificar_token(credentials):
             algorithms=[ALGORITHM]
         )
         
-        usuario_id = payload.get("sub") 
+        usuario_id = payload.get("sub")
                     
     except ExpiredSignatureError:
         raise HTTPException(
