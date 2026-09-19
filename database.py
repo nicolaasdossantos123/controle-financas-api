@@ -1,12 +1,16 @@
 from sqlalchemy import create_engine, text
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+import os
 
-DATABASE_URL = "postgresql://postgres:night@localhost:5432/api-financas"
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-print(DATABASE_URL)
-
-engine = create_engine(
-    "postgresql+psycopg2://postgres:night@127.0.0.1:5432/postgres"
-)
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
 with engine.begin() as conexao:
 
